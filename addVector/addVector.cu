@@ -20,6 +20,8 @@ int main(void)
     int threadsPerBlock = 512; 
     int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
 
+    printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
+
     size_t size = numElements * sizeof(float);
 
     float *h_A = (float *)malloc(size);
