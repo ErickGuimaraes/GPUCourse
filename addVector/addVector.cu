@@ -36,9 +36,13 @@ int main(void)
     cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice);
 
-    printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
+    clock_t start_time = clock();
+
     addVector<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, numElements);
-    cudaGetLastError();
+
+    clock_t stop_time = clock();
+    int total_time = (int)(stop_time - start_time);
+    fprintf("TOTAL TIME: %d", total_time);
 
     cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost);
 
@@ -52,4 +56,3 @@ int main(void)
 
     return 0;
 }
-
