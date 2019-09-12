@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
+#include <cuda.h>
 #include <cuda_runtime.h>
 
 __global__ void addVector(const float *A, const float *B, float *C, int numElements)
@@ -36,15 +39,30 @@ int main(void)
     cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice);
 
-    clock_t start_time = clock();
+    cudaEvent_t start,stop;
+
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
 
     addVector<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, numElements);
 
-    clock_t stop_time = clock();
-    int total_time = (int)(stop_time - start_time);
-    fprintf("TOTAL TIME: %d", total_time);
+
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&ms, start, stop);
 
     cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost);
+
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+
+    double memXFers=5*4*COLUMNS*ROWS;
+    memXFers/=1024*1024*1024;
+
+    printf("GPU: %f ms bandwidth %g GB/s",ms, memXFers/(ms/1000.0));
+    printf("\n CPU : %g ms bandwidth %g GB/s",mtime, memXFers/(mtime/1000.0));
 
     err = cudaFree(d_A);
     err = cudaFree(d_B);
