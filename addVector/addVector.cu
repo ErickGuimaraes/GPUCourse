@@ -13,7 +13,10 @@ __global__ void addVector(const float *A, const float *B, float *C, int numEleme
 
 int main(void)
 {
-    int numElements = 50000;
+    int numElements = 1000; 
+    int threadsPerBlock = 512; 
+    int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
+
     size_t size = numElements * sizeof(float);
 
     float *h_A = (float *)malloc(size);
@@ -26,20 +29,13 @@ int main(void)
         h_B[i] = rand()/(float)RAND_MAX;
     }
 
-    float *d_A = NULL;
-    cudaMalloc((void **)&d_A, size);
-
-    float *d_B = NULL;
-    cudaMalloc((void **)&d_B, size);
-
-    float *d_C = NULL;
-    cudaMalloc((void **)&d_C, size);
+    float *d_A = NULL;  cudaMalloc((void **)&d_A, size);
+    float *d_B = NULL;  cudaMalloc((void **)&d_B, size);
+    float *d_C = NULL;  cudaMalloc((void **)&d_C, size);
 
     cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice);
 
-    int threadsPerBlock = 256;
-    int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
     printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
     addVector<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, numElements);
     cudaGetLastError();
