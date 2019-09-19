@@ -6,7 +6,7 @@
 
 __global__ void atomicHistogram(int * Histogram, const int * data)
 {
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    int id = blockDim.x * blockIdx.x + threadIdx.x;
 
     int value = data[id];
     int Histovalue = DetectRange(value);
@@ -23,22 +23,20 @@ int main(void)
 
     size_t size = numElements * sizeof(float);
 
-    float *h_A = (float *)malloc(size);
-    float *h_B = (float *)malloc(size);
-    float *h_C = (float *)malloc(size);
+    float *host_histogram = (float *)malloc(size);
+    float *host_data = (float *)malloc(size);
 
     for (int i = 0; i < numElements; ++i)
     {
-        h_A[i] = rand()/(float)RAND_MAX;
-        h_B[i] = rand()/(float)RAND_MAX;
+        host_histogram[i] = rand()/(float)RAND_MAX;
+        host_data[i] = rand()/(float)RAND_MAX;
     }
 
-    float *d_A = NULL;  cudaMalloc((void **)&d_A, size);
-    float *d_B = NULL;  cudaMalloc((void **)&d_B, size);
-    float *d_C = NULL;  cudaMalloc((void **)&d_C, size);
+    float *device_histogram = NULL;  cudaMalloc((void **)&device_histogram, size);
+    float *device_data = NULL;  cudaMalloc((void **)&device_data, size);
 
-    cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_histogram, host_histogram, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_data, host_data, size, cudaMemcpyHostToDevice);
 
     cudaEvent_t start,stop;
 
@@ -46,15 +44,13 @@ int main(void)
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
 
-
-    addVector<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, numElements);
-
+    atomicHistogram<<<blocksPerGrid, threadsPerBlock>>>(device_histogram, device_data);
 
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&ms, start, stop);
 
-    cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_histogram, device_histogram, size, cudaMemcpyDeviceToHost);
 
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
@@ -65,13 +61,11 @@ int main(void)
     printf("GPU: %f ms bandwidth %g GB/s",ms, memXFers/(ms/1000.0));
     printf("\n CPU : %g ms bandwidth %g GB/s",mtime, memXFers/(mtime/1000.0));
 
-    err = cudaFree(d_A);
-    err = cudaFree(d_B);
-    err = cudaFree(d_C);
+    cudaFree(device_histogram);
+    cudaFree(device_data);
 
-    free(h_A);
-    free(h_B);
-    free(h_C);
+    free(host_histogram);
+    free(host_data);
 
     return 0;
 }
