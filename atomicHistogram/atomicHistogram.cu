@@ -4,14 +4,13 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-__global__ void atomicHistogram(const float *A, const float *B, float *C, int numElements)
+__global__ void atomicHistogram(int * Histogram, const int * data)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
 
-    if (i < numElements)
-    {
-        C[i] = A[i] + B[i];
-    }
+    int value = data[id];
+    int Histovalue = DetectRange(value);
+    atomicAdd(&Histogram[Histovalue], 1);
 }
 
 int main(void)
